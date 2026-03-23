@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FSJ 案件手配バックアップツール</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --bg2: #161b27;
+    --bg3: #1e2535;
+    --main: #567ab9;
+    --main2: #3d5a8a;
+    --accent: #64d8a0;
+    --warn: #f0a04b;
+    --danger: #e05c5c;
+    --text: #e8edf5;
+    --text2: #8a9ab5;
+    --border: #2a3348;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 40px;
+  }
+
+  /* ヘッダー */
+  header {
+    background: linear-gradient(135deg, #1a2540 0%, #0f1117 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    width: 38px;
+    height: 38px;
+    background: var(--main);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .header-text h1 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.02em;
+  }
+
+  .header-text p {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 1px;
+  }
+
+  .status-badge {
+    margin-left: auto;
+    background: rgba(100, 216, 160, 0.15);
+    border: 1px solid rgba(100, 216, 160, 0.3);
+    color: var(--accent);
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+
+  /* メインレイアウト */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 16px 0;
+  }
+
+  /* 入力セクション */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text2);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .section-label::before {
+    content: '';
+    display: block;
+    width: 3px;
+    height: 12px;
+    background: var(--main);
+    border-radius: 2px;
+  }
+
+  textarea {
+    width: 100%;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'Noto Sans JP', monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    padding: 14px;
+    resize: vertical;
+    transition: border-color 0.2s;
+    min-height: 180px;
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: var(--main);
+    background: var(--bg3);
+  }
+
+  textarea::placeholder { color: var(--text2); }
+
+  /* ボタン */
+  .btn-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-primary {
+    background: var(--main);
+    color: white;
+    flex: 1;
+  }
+
+  .btn-primary:hover { background: var(--main2); transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-clear {
+    background: var(--bg3);
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+
+  .btn-clear:hover { border-color: var(--text2); color: var(--text); }
+
+  /* 出力エリア */
+  .output-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 24px;
+  }
+
+  @media (max-width: 600px) {
+    .output-grid { grid-template-columns: 1fr; }
+  }
+
+  .output-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .output-card-header {
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .output-card-title {
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 700;
+  }
+
+  .badge-first {
+    background: rgba(86, 122, 185, 0.25);
+    color: #7ea8e0;
+    border: 1px solid rgba(86, 122, 185, 0.3);
+  }
+
+  .badge-second {
+    background: rgba(100, 216, 160, 0.2);
+    color: var(--accent);
+    border: 1px solid rgba(100, 216, 160, 0.3);
+  }
+
+  .badge-dest {
+    font-size: 10px;
+    color: var(--text2);
+  }
+
+  .btn-copy {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .btn-copy:hover { border-color: var(--main); color: var(--main); }
+  .btn-copy.copied { background: rgba(100,216,160,0.15); border-color: var(--accent); color: var(--accent); }
+
+  .output-text {
+    padding: 14px;
+    font-size: 12px;
+    line-height: 1.9;
+    white-space: pre-wrap;
+    word-break: break-all;
+    min-height: 120px;
+    color: var(--text);
+  }
+
+  .output-text.empty {
+    color: var(--text2);
+    font-style: italic;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+  }
+
+  /* エラー・警告 */
+  .alert {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    margin-top: 12px;
+    display: none;
+  }
+
+  .alert-warn {
+    background: rgba(240, 160, 75, 0.12);
+    border: 1px solid rgba(240, 160, 75, 0.3);
+    color: var(--warn);
+  }
+
+  .alert-error {
+    background: rgba(224, 92, 92, 0.12);
+    border: 1px solid rgba(224, 92, 92, 0.3);
+    color: var(--danger);
+  }
+
+  /* ST連絡メール出力 */
+  .output-full {
+    margin-top: 14px;
+  }
+
+  .output-full .output-card {
+    width: 100%;
+  }
+
+  /* フッター */
+  .footer {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 11px;
+    color: var(--text2);
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+
+  /* アニメ */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .output-card { animation: fadeIn 0.25s ease; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⚡</div>
+  <div class="header-text">
+    <h1>FSJ 案件手配バックアップツール</h1>
+    <p>GAS停止時の手動出力ツール　｜　FIVE-STAR JAPAN 株式会社</p>
+  </div>
+  <div class="status-badge">✓ オフライン対応</div>
+</header>
+
+<div class="container">
+
+  <!-- 入力 -->
+  <div style="margin-top: 8px;">
+    <div class="section-label">メール本文を貼り付け</div>
+    <textarea id="mailInput" placeholder="シェアリングテクノロジーからのメール本文をここに貼り付けてください..."></textarea>
+    <div id="alertBox" class="alert"></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="generate()">⚡ 生成する</button>
+      <button class="btn btn-clear" onclick="clearAll()">✕ クリア</button>
+    </div>
+  </div>
+
+  <!-- 通常案件出力 -->
+  <div id="normalOutput" style="display:none;">
+    <div style="margin-top: 28px;">
+      <div class="section-label">生成結果</div>
+    </div>
+    <div class="output-grid">
+      <!-- ファースト -->
+      <div class="output-card">
+        <div class="output-card-header">
+          <div class="output-card-title">
+            <span class="badge badge-first">FIRST</span>
+            案件紹介
+            <span class="badge-dest">→ 各エリアROOM</span>
+          </div>
+          <button class="btn-copy" id="copyFirst" onclick="copyText('firstOutput','copyFirst')">📋 コピー</button>
+        </div>
+        <div id="firstOutput" class="output-text empty">生成後に表示されます</div>
+      </div>
+      <!-- セカンド -->
+      <div class="output-card">
+        <div class="output-card-header">
+          <div class="output-card-title">
+            <span class="badge badge-second">SECOND</span>
+            案件詳細
+            <span class="badge-dest">→ 案件詳細&確認ROOM</span>
+          </div>
+          <button class="btn-copy" id="copySecond" onclick="copyText('secondOutput','copySecond')">📋 コピー</button>
+        </div>
+        <div id="secondOutput" class="output-text empty">生成後に表示されます</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ST連絡メール出力 -->
+  <div id="stOutput" style="display:none;">
+    <div style="margin-top: 28px;">
+      <div class="section-label">生成結果</div>
+    </div>
+    <div class="output-full">
+      <div class="output-card">
+        <div class="output-card-header">
+          <div class="output-card-title">
+            <span class="badge" style="background:rgba(240,160,75,0.2);color:var(--warn);border:1px solid rgba(240,160,75,0.3);">ST連絡</span>
+            STからの連絡
+            <span class="badge-dest">→ 案件詳細&確認ROOM</span>
+          </div>
+          <button class="btn-copy" id="copyST" onclick="copyText('stOutputText','copyST')">📋 コピー</button>
+        </div>
+        <div id="stOutputText" class="output-text empty">生成後に表示されます</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ===== 設定（スプシと同期） =====
+const AREA_MAP = {
+  '愛知':'東海','三重':'東海','岐阜':'東海','静岡':'東海',
+  '大阪':'関西','兵庫':'関西','京都':'関西','奈良':'関西','滋賀':'関西',
+  '佐賀':'九州','長崎':'九州','熊本':'九州','福岡':'九州',
+  '大分':'九州','宮崎':'九州','鹿児島':'九州',
+  '山口':'山口'
+};
+
+const FSJ_HACHI_PREFS = ['福岡','愛知','三重','岐阜','大阪','京都','奈良','滋賀'];
+
+const GENRE_HEADER = {
+  'カーバッテリー上がり':'RS',
+  'バッテリー上がり':'RS',
+  'ハチ':'ハチ',
+  'カギ':'カギ',
+  'パンク修理':'その他RS',
+  'その他ロードサービス':'その他RS',
+};
+
+const GENRE_LABEL = {
+  'カーバッテリー上がり':'RS',
+  'バッテリー上がり':'RS',
+  'ハチ':'ハチ',
+  'カギ':'カギ',
+  'パンク修理':'その他RS',
+  'その他ロードサービス':'その他RS',
+};
+
+const SITE_NAME_MAP = {
+  'カーバッテリー110番':'カーバッテリー110番',
+  'バッテリー110番':'バッテリー110番',
+  'ハチ110番':'ハチ110番',
+  'カギ110番':'カギ110番',
+  'パンク110番':'パンク110番',
+  '生活110番':'生活110番',
+  'カーバッテリーお助け隊':'カーバッテリーお助け隊',
+};
+
+// ===== ヘルパー =====
+function extract(text, start, end) {
+  const s = text.indexOf(start);
+  if (s === -1) return '';
+  const si = s + start.length;
+  const e = end ? text.indexOf(end, si) : -1;
+  return (e === -1 ? text.substring(si) : text.substring(si, e)).trim();
+}
+
+function extractMulti(text, starts, ends) {
+  for (let i = 0; i < starts.length; i++) {
+    const r = extract(text, starts[i], ends[i] || '\n');
+    if (r) return r;
+  }
+  return '';
+}
+
+function getArea(address) {
+  for (const [pref, area] of Object.entries(AREA_MAP)) {
+    if (address.includes(pref)) return area;
+  }
+  return 'その他';
+}
+
+function getHeader(genre) {
+  for (const [kw, h] of Object.entries(GENRE_HEADER)) {
+    if (genre.includes(kw)) return h;
+  }
+  return '未分類';
+}
+
+function getGenreLabel(genre) {
+  for (const [kw, l] of Object.entries(GENRE_LABEL)) {
+    if (genre.includes(kw)) return l;
+  }
+  return genre;
+}
+
+function simplifySiteName(siteName) {
+  for (const [kw, s] of Object.entries(SITE_NAME_MAP)) {
+    if (siteName.includes(kw)) return s;
+  }
+  return siteName;
+}
+
+function maskPhone(phone) {
+  if (!phone || phone.length < 3) return phone;
+  return phone.slice(0, -2);
+}
+
+function formatReceived(received) {
+  return received
+    .replace(/(\d{4})-(\d{2})-(\d{2})/, '$1/$2/$3')
+    .replace(/(\d{2}:\d{2}):\d{2}$/, '$1');
+}
+
+function isSTMail(body) {
+  return body.includes('シェアリングテクノロジー株式会社です。');
+}
+
+// ===== パース =====
+function parseMailBody(body) {
+  const caseNo = extractMulti(body, ['【案件番号：','■案件番号：'], ['】','\n']);
+  if (!caseNo) return null;
+  return {
+    caseNo,
+    received: extractMulti(body, ['■受取日時：','■受信日時：'], ['\n','\n']),
+    deadline: extractMulti(body, ['■お客様への連絡期限：','【下記日時までに連絡必須】\n'], ['\n','\n']),
+    siteName: extract(body, '■問合せ元サイト名：', '\n'),
+    genre:    extract(body, '■ジャンル：', '\n'),
+    name:     extractMulti(body, ['■お名前：','■名前：'], ['\n','\n']).replace(/ /g, '　'),
+    address:  extract(body, '■住所：', '\n■'),
+    phone:    extract(body, '■電話番号１：', '\n'),
+    phone2:   extract(body, '■電話番号２：', '\n'),
+    email:    extract(body, '■メールアドレス：', '\n'),
+  };
+}
+
+// ===== ファースト生成 =====
+function buildFirst(p) {
+  const received = formatReceived(p.received);
+  const datePart = received.split(' ')[0];
+  const yyyy = datePart.split('/')[0];
+  const displayAddress = p.address
+    .replace(/〒\d{3}-?\d{4}/g, '')
+    .replace(/〒\d+/g, '')
+    .replace(/（[ァ-ヶー・\s]+）/g, '')
+    .replace(/（以降は加盟店様へ伝達）/g, '')
+    .replace(/（以降は加盟店へ伝達）/g, '')
+    .replace(/（以降は加盟店様に伝達）/g, '')
+    .replace(/\n/g, '')
+    .trim();
+  return `【案件種別】: ${getHeader(p.genre)}
+【案件番号】: ${p.caseNo}
+【案件取得日】: ${datePart}
+【施工完了日】: ${yyyy}/  
+【地域】: ${displayAddress}
+【顧客名】: ${p.name}
+【連絡先】: ${maskPhone(p.phone)}
+【作業内容】: 
+【施工金額[税込]】: 
+【徴収方法】: 現金/クレカ/振込/保険/キャッシュレス
+【案件担当者名】: `;
+}
+
+// ===== セカンド生成 =====
+function buildSecond(body, p) {
+  const received = formatReceived(p.received);
+  const consultStartIdx = body.search(/[=＝]{3,}/);
+  const consultEnd = body.indexOf('＜調査費');
+  let consultBlock = '';
+  if (consultStartIdx !== -1 && consultEnd !== -1) {
+    consultBlock = body.substring(consultStartIdx, consultEnd).trim();
+    consultBlock = consultBlock.replace(/[=＝]{3,}/g, '＝＝＝＝＝＝＝＝＝＝');
+    consultBlock = consultBlock.replace(/■希望日時：(.+)/, '■希望日時：\n$1');
+  }
+
+  let situationBlock = '';
+  const situationStart = body.indexOf('【状況】');
+  const sitEndMarkers = ['【サイト別注意事項】','シェアリングテクノロジー','------------------------------------------','何卒よろしくお願い','案件詳細は下記URL'];
+  let situationEnd = -1;
+  if (situationStart !== -1) {
+    for (const m of sitEndMarkers) {
+      const idx = body.indexOf(m, situationStart);
+      if (idx !== -1 && (situationEnd === -1 || idx < situationEnd)) situationEnd = idx;
+    }
+    if (situationEnd !== -1) situationBlock = '\n\n' + body.substring(situationStart, situationEnd).trim();
+  }
+
+  let siteNoteBlock = '';
+  const siteNoteStart = body.indexOf('【サイト別注意事項】');
+  const snEndMarkers = ['【下記日時までに連絡必須】','案件詳細は下記URL','------------------------------------------'];
+  let siteNoteEnd = -1;
+  if (siteNoteStart !== -1) {
+    for (const m of snEndMarkers) {
+      const idx = body.indexOf(m, siteNoteStart);
+      if (idx !== -1 && (siteNoteEnd === -1 || idx < siteNoteEnd)) siteNoteEnd = idx;
+    }
+    if (siteNoteEnd !== -1) {
+      siteNoteBlock = body.substring(siteNoteStart, siteNoteEnd).trim();
+      siteNoteBlock = siteNoteBlock
+        .replace(/▼ご報告方法はこちら[\s\S]*?https:\/\/bit\.ly\/\S+\n?/g, '')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n{2,}/g, '\n')
+        .trim();
+      siteNoteBlock = '\n\n' + siteNoteBlock;
+    }
+  }
+
+  return `■案件番号：${p.caseNo}
+
+■受取日時：
+${received}
+
+■お客様への連絡期限：
+${p.deadline}
+
+■問合せ元サイト名：
+${simplifySiteName(p.siteName)}
+
+■ジャンル：
+${getGenreLabel(p.genre)}(${p.genre})
+
+■お名前：
+${p.name}
+
+■住所：
+${p.address}
+
+■電話番号１：${p.phone}
+■電話番号２：${p.phone2}
+■メールアドレス：${p.email}
+
+${consultBlock}
+＜調査費、キャンセル料、出張費が発生する場合：事前に必ずお客様にご説明・ご了承の上、請求してください＞${situationBlock}${siteNoteBlock}`;
+}
+
+// ===== ST連絡メール生成 =====
+function buildSTMessage(body) {
+  const caseNo = extractMulti(body, ['■案件番号：','■案件番号 ：'], ['\n','\n']);
+  if (!caseNo) return null;
+  const name = extractMulti(body, ['■お客様名：','■お客様名 ：'], ['\n','\n']);
+  const request = extractMulti(body, ['■ご要件：','■ご要件 ：'], ['\n','\n']);
+  const deadline = extract(body, '■連絡期限：', '\n');
+
+  const descStart = body.indexOf('下記案件について');
+  const descEnd = body.indexOf('■案件番号');
+  let description = '';
+  if (descStart !== -1 && descEnd !== -1) {
+    description = body.substring(descStart, descEnd)
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l && !l.includes('ありがとうございました') && !l.includes('今後共') && !l.includes('まことに申し訳') && !l.includes('大変申し訳'))
+      .join('')
+      .trim();
+  }
+
+  let lines = ['【STより連絡あり】', ''];
+  if (description) lines.push(description, '');
+  lines.push(`■案件番号：${caseNo}`);
+  if (name) lines.push(`■お客様名：${name}`);
+  if (deadline) lines.push(`■連絡期限：${deadline}`);
+  if (request) lines.push(`■ご要件：${request}`);
+  lines.push('', '@', 'ご対応よろしくお願いいたします。');
+  return lines.join('\n');
+}
+
+// ===== メイン処理 =====
+function generate() {
+  const body = document.getElementById('mailInput').value
+    .replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const alertBox = document.getElementById('alertBox');
+
+  alertBox.style.display = 'none';
+  document.getElementById('normalOutput').style.display = 'none';
+  document.getElementById('stOutput').style.display = 'none';
+
+  if (!body.trim()) {
+    showAlert('メール本文を入力してください。', 'warn');
+    return;
+  }
+
+  // ST連絡メール
+  if (isSTMail(body)) {
+    const msg = buildSTMessage(body);
+    if (!msg) { showAlert('案件番号が見つかりませんでした。', 'error'); return; }
+    document.getElementById('stOutputText').textContent = msg;
+    document.getElementById('stOutputText').classList.remove('empty');
+    document.getElementById('stOutput').style.display = 'block';
+    return;
+  }
+
+  // 通常案件
+  const parsed = parseMailBody(body);
+  if (!parsed) { showAlert('案件番号が見つかりませんでした。メール本文を確認してください。', 'error'); return; }
+
+  const first = buildFirst(parsed);
+  const second = buildSecond(body, parsed);
+
+  const firstEl = document.getElementById('firstOutput');
+  const secondEl = document.getElementById('secondOutput');
+
+  firstEl.textContent = first;
+  secondEl.textContent = second;
+  firstEl.classList.remove('empty');
+  secondEl.classList.remove('empty');
+
+  // ハチ案件警告
+  if (parsed.genre.includes('ハチ') && FSJ_HACHI_PREFS.some(p => parsed.address.includes(p))) {
+    showAlert('⚠️ このハチ案件はFSJハチルームへの送信対象です。案件紹介は不要で、案件詳細のみFSJハチルームへ送信してください。', 'warn');
+  }
+
+  document.getElementById('normalOutput').style.display = 'block';
+}
+
+function showAlert(msg, type) {
+  const el = document.getElementById('alertBox');
+  el.textContent = msg;
+  el.className = `alert alert-${type}`;
+  el.style.display = 'block';
+}
+
+function clearAll() {
+  document.getElementById('mailInput').value = '';
+  document.getElementById('normalOutput').style.display = 'none';
+  document.getElementById('stOutput').style.display = 'none';
+  document.getElementById('alertBox').style.display = 'none';
+}
+
+function copyText(elementId, btnId) {
+  const text = document.getElementById(elementId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById(btnId);
+    btn.textContent = '✓ コピー済み';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '📋 コピー';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+</script>
+
+</body>
+</html>
