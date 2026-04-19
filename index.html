@@ -151,8 +151,19 @@
     text-align: left;
   }
   .nav-btn:hover { background: var(--bg3); }
-  .nav-btn .nav-case { color: var(--accent); font-weight: 700; }
-  .nav-btn .nav-pref { color: var(--text2); font-size: 11px; }
+  .nav-case { color: var(--accent); font-weight: 700; }
+  .nav-name { font-size: 12px; }
+  .nav-pref { color: var(--text2); font-size: 11px; }
+  .nav-genre {
+    background: var(--bg3);
+    color: var(--text2);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+  }
+  .nav-genre.st { background: rgba(240, 160, 75, 0.2); color: var(--warn); }
   .nav-btn .nav-room {
     margin-left: auto;
     color: var(--accent);
@@ -180,11 +191,6 @@
     color: var(--danger);
   }
 
-  @keyframes flash {
-    0%   { box-shadow: 0 0 0 3px rgba(100, 216, 160, 0.6); }
-    100% { box-shadow: 0 0 0 3px rgba(100, 216, 160, 0); }
-  }
-  .result-block.flash { animation: flash 1.5s ease-out; }
   .status-badge.loading {
     background: rgba(86, 122, 185, 0.15);
     border-color: rgba(86, 122, 185, 0.3);
@@ -295,7 +301,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 14px;
-    margin-top: 24px;
+    padding: 14px;
   }
 
   @media (max-width: 600px) {
@@ -303,9 +309,9 @@
   }
 
   .output-card {
-    background: var(--bg2);
+    background: var(--bg3);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: 8px;
     overflow: hidden;
   }
 
@@ -385,31 +391,34 @@
   .output-text::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
   .output-text::-webkit-scrollbar-thumb:hover { background: var(--text2); }
 
-  /* 結果ヘッダー（タイトル + 削除ボタン） */
+  /* 結果ヘッダー（ナビ項目と同じデザイン） */
   .result-header {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    margin-bottom: 8px;
-    gap: 8px 12px;
+    gap: 10px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    padding: 10px 14px;
+    margin-bottom: 0;
   }
-  .result-header .section-label { margin-bottom: 0; white-space: nowrap; }
-  .section-label .case-num { color: var(--accent); }
+  .result-header .room-badge { margin-left: auto; }
 
-  .btn-delete {
-    background: rgba(224, 92, 92, 0.1);
-    border: 1px solid rgba(224, 92, 92, 0.3);
-    color: var(--danger);
+  .result-header .btn-delete {
+    background: transparent;
+    border: none;
+    color: var(--text2);
     font-family: 'Noto Sans JP', sans-serif;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 700;
-    padding: 4px 12px;
-    border-radius: 6px;
+    padding: 2px 6px;
+    border-radius: 4px;
     cursor: pointer;
     transition: all 0.15s;
-    white-space: nowrap;
   }
-  .btn-delete:hover { background: rgba(224, 92, 92, 0.2); border-color: var(--danger); }
+  .result-header .btn-delete:hover { background: rgba(224, 92, 92, 0.15); color: var(--danger); }
 
   .room-badge {
     font-size: 11px;
@@ -447,10 +456,10 @@
     border: 1px solid rgba(240, 160, 75, 0.35);
     color: var(--warn);
     padding: 10px 14px;
-    border-radius: 8px;
+    border-radius: 6px;
     font-size: 12px;
     line-height: 1.6;
-    margin-bottom: 10px;
+    margin: 12px 14px 0;
   }
 
   .alert-warn {
@@ -466,6 +475,7 @@
   }
 
   /* ST連絡メール出力 */
+  .output-full { padding: 14px; }
   .output-full .output-card { width: 100%; }
 
   .badge-st {
@@ -475,13 +485,17 @@
   }
 
   .result-block {
-    margin-top: 18px;
-    padding: 14px;
+    margin-top: 20px;
+    padding: 0;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+    scroll-margin-top: 110px;
   }
-  #resultsArea .result-block:nth-child(even) {
-    background: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 0 0 100vmax rgba(255, 255, 255, 0.12);
-    clip-path: inset(0 -100vmax);
+  .result-block.selected {
+    box-shadow: 0 0 0 2px var(--accent);
   }
 
   .btn-primary:disabled {
@@ -854,23 +868,22 @@ function generate() {
       document.getElementById('mailInput').value = '';
       return;
     }
-    const stRoom = ROOM_MAP['トランジット'] || 'トランジットROOM';
+    const stName = extractMulti(body, ['■お客様名：','■お客様名 ：'], ['\n','\n']);
     const block = document.createElement('div');
     block.className = 'result-block';
     block.dataset.caseno = stCaseNo;
     block.innerHTML = `
       <div class="result-header">
-        <div class="section-label">案件番号 <span class="case-num">${stCaseNo}</span></div>
-        <span class="room-badge transit">→ ${stRoom}</span>
-        <button class="btn-delete" onclick="deleteBlock(this)">✕ 削除</button>
+        <span class="nav-case">${stCaseNo}</span>
+        <span class="nav-genre st">ST連絡</span>
+        ${stName ? `<span class="nav-name">${stName}</span>` : ''}
+        <span class="room-badge transit">→ 該当するルーム</span>
+        <button class="btn-delete" onclick="deleteBlock(this)" aria-label="削除">✕</button>
       </div>
       <div class="output-full">
         <div class="output-card">
           <div class="output-card-header">
-            <div class="output-card-title">
-              <span class="badge badge-st">ST連絡</span>
-              STからの連絡
-            </div>
+            <div class="output-card-title"></div>
             <button class="btn-copy" id="copyST${id}" onclick="copyTextById('stOut${id}','copyST${id}')">${COPY_ICON} コピー</button>
           </div>
           <div id="stOut${id}" class="output-text"></div>
@@ -878,8 +891,7 @@ function generate() {
       </div>`;
     area.insertBefore(block, area.firstChild);
     document.getElementById('stOut' + id).textContent = msg;
-    const stName = extractMulti(body, ['■お客様名：','■お客様名 ：'], ['\n','\n']);
-    addNavItem(stCaseNo, stName, '', stRoom, 'transit');
+    addNavItem(stCaseNo, stName, '', '該当するルーム', 'transit', 'ST連絡', 'st');
     document.getElementById('mailInput').value = '';
     updateCount();
     return;
@@ -936,11 +948,16 @@ function generate() {
   const block = document.createElement('div');
   block.className = 'result-block';
   block.dataset.caseno = parsed.caseNo;
+  const prefName = extractPref(parsed.address);
+  const genreLabel = getHeader(parsed.genre);
   block.innerHTML = `
     <div class="result-header">
-      <div class="section-label">案件番号 <span class="case-num">${parsed.caseNo}</span></div>
+      <span class="nav-case">${parsed.caseNo}</span>
+      ${genreLabel ? `<span class="nav-genre">${genreLabel}</span>` : ''}
+      ${parsed.name ? `<span class="nav-name">${parsed.name}</span>` : ''}
+      ${prefName ? `<span class="nav-pref">${prefName}</span>` : ''}
       <span class="${roomClass}">→ ${topRoom}</span>
-      <button class="btn-delete" onclick="deleteBlock(this)">✕ 削除</button>
+      <button class="btn-delete" onclick="deleteBlock(this)" aria-label="削除">✕</button>
     </div>
     ${hachiWarnHtml}
     <div class="output-grid">
@@ -971,7 +988,7 @@ function generate() {
   document.getElementById('firstOut' + id).textContent = first;
   document.getElementById('secondOut' + id).textContent = second;
   const navRoomClass = isFsjHachiRoom ? 'fsj-hachi' : '';
-  addNavItem(parsed.caseNo, parsed.name, extractPref(parsed.address), topRoom, navRoomClass);
+  addNavItem(parsed.caseNo, parsed.name, extractPref(parsed.address), topRoom, navRoomClass, getHeader(parsed.genre));
 
   document.getElementById('mailInput').value = '';
   updateCount();
@@ -995,7 +1012,7 @@ function extractPref(address) {
   return '';
 }
 
-function addNavItem(caseNo, name, pref, room, roomClass) {
+function addNavItem(caseNo, name, pref, room, roomClass, genre, genreClass) {
   const list = document.getElementById('navList');
   const item = document.createElement('div');
   item.className = 'nav-item';
@@ -1003,6 +1020,7 @@ function addNavItem(caseNo, name, pref, room, roomClass) {
   item.innerHTML = `
     <button class="nav-btn" onclick="scrollToBlock('${caseNo}')">
       <span class="nav-case">${caseNo}</span>
+      ${genre ? `<span class="nav-genre ${genreClass || ''}">${genre}</span>` : ''}
       ${name ? `<span class="nav-name">${name}</span>` : ''}
       ${pref ? `<span class="nav-pref">${pref}</span>` : ''}
       ${room ? `<span class="nav-room ${roomClass || ''}">→ ${room}</span>` : ''}
@@ -1028,10 +1046,20 @@ function scrollToBlock(caseNo) {
   const block = document.querySelector(`#resultsArea .result-block[data-caseno="${caseNo}"]`);
   if (!block) return;
   block.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  block.classList.remove('flash');
-  void block.offsetWidth;
-  block.classList.add('flash');
+  selectBlock(block);
 }
+
+function selectBlock(block) {
+  document.querySelectorAll('#resultsArea .result-block.selected').forEach(b => {
+    if (b !== block) b.classList.remove('selected');
+  });
+  block.classList.add('selected');
+}
+
+document.getElementById('resultsArea').addEventListener('click', (e) => {
+  const block = e.target.closest('.result-block');
+  if (block) selectBlock(block);
+});
 
 function showAlert(msg, type) {
   const el = document.getElementById('alertBox');
